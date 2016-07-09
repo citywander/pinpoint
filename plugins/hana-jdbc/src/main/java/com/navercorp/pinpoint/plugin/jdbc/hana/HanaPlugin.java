@@ -44,7 +44,7 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
         addDriverTransformer();
         addStatementTransformer();
         addPreparedStatementTransformer(config);
-        addCallableStatementTransformer(config);
+        //addCallableStatementTransformer(config);
 
         // From MySQL driver 5.1.x, backward compatibility is broken.
         // Driver returns not com.mysql.jdbc.Connection but com.mysql.jdbc.JDBC4Connection which extends com.mysql.jdbc.ConnectionImpl from 5.1.x
@@ -106,7 +106,7 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
     }
 
     private void addPreparedStatementTransformer(final HanaConfig config) {
-        transformTemplate.transform("com.sap.db.jdbc.trace.PreparedStatement", new TransformCallback() {
+        transformTemplate.transform("com.sap.db.jdbc.CallableStatementSapDB", new TransformCallback() {
 
             @Override
             public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
@@ -211,7 +211,7 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
         };
 
         transformTemplate.transform("com.sap.db.jdbc.trace.Statement", transformer);
-        //transformTemplate.transform("com.mysql.jdbc.StatementImpl", transformer);
+        transformTemplate.transform("com.sap.db.jdbc.StatementSapDB", transformer);
 
     }
 

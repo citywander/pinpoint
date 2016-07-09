@@ -53,8 +53,8 @@ public class HanaJdbcUrlParser extends JdbcUrlParser {
 
         String databaseId = maker.next().afterLast('/').before('?').value();
         String normalizedUrl = maker.clear().before('?').value();
-        
-        return new DefaultDatabaseInfo(HanaConstants.HANA, HanaConstants.HANA_EXECUTE_QUERY, url, normalizedUrl, hostList, databaseId);
+        DatabaseInfo info = new DefaultDatabaseInfo(HanaConstants.HANA, HanaConstants.HANA_EXECUTE_QUERY, url, normalizedUrl, hostList, databaseId);
+        return info;
     }
 
     private boolean isLoadbalanceUrl(String url) {

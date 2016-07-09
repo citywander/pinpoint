@@ -86,7 +86,8 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
             }
         };
 
-        transformTemplate.transform("com.sap.db.jdbc.trace.Connection", transformer);
+        //transformTemplate.transform("com.sap.db.jdbc.trace.Connection", transformer);
+        transformTemplate.transform("com.sap.db.jdbc.ConnectionSapDB", transformer);
         //transformTemplate.transform("com.mysql.jdbc.ConnectionImpl", transformer);
     }
 

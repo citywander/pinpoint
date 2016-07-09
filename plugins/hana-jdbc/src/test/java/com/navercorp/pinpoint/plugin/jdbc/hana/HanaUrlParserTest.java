@@ -57,11 +57,12 @@ public class HanaUrlParserTest {
     @Test
     public void mysqlParse1() {
 
-        DatabaseInfo dbInfo = jdbcUrlParser.parse("jdbc:sap://ip_address:30215?reconnect=true&currentschema=JOBDB8");
+        DatabaseInfo dbInfo = jdbcUrlParser.parse("jdbc:sap://10.58.108.180:30215?reconnect=true&currentschema=JOBDB8");
         Assert.assertEquals(dbInfo.getType(), HanaConstants.HANA);
-        Assert.assertEquals(dbInfo.getHost().get(0), ("ip_address:30215"));
+        Assert.assertEquals(dbInfo.getHost().get(0), ("10.58.108.180:30215"));
         Assert.assertEquals(dbInfo.getDatabaseId(), "JOBDB8");
-        Assert.assertEquals(dbInfo.getUrl(), "jdbc:sap://ip_address:30215");
+        Assert.assertEquals(dbInfo.getUrl(), "jdbc:sap://10.58.108.180:30215");
+        System.out.print(dbInfo);
     }
 
     //@Test

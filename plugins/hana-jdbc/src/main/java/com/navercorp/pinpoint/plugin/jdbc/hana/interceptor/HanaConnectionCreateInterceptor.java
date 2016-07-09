@@ -17,6 +17,7 @@
 package com.navercorp.pinpoint.plugin.jdbc.hana.interceptor;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 import com.navercorp.pinpoint.bootstrap.context.DatabaseInfo;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
@@ -30,11 +31,12 @@ import com.navercorp.pinpoint.bootstrap.plugin.jdbc.DatabaseInfoAccessor;
 import com.navercorp.pinpoint.bootstrap.plugin.jdbc.DefaultDatabaseInfo;
 import com.navercorp.pinpoint.bootstrap.util.InterceptorUtils;
 import com.navercorp.pinpoint.plugin.jdbc.hana.HanaConstants;
+import com.navercorp.pinpoint.plugin.jdbc.hana.HanaJdbcUrlParser;
 
 /**
  * @author emeroad
  */
-@TargetConstructor({ "java.lang.String", "int", "java.util.Properties", "java.lang.String", "java.lang.String" })
+@TargetConstructor({ "com.sap.db.rte.comm.JdbcCommunication", "java.util.Properties", "com.sap.db.jdbc.trace.TraceControl" })
 public class HanaConnectionCreateInterceptor implements AroundInterceptor {
 
     private final PLogger logger = PLoggerFactory.getLogger(this.getClass());
@@ -46,29 +48,27 @@ public class HanaConnectionCreateInterceptor implements AroundInterceptor {
         this.traceContext = traceContext;
     }
 
+    //    jdbc:sap://10.58.108.180:30215?reconnect=true&currentschema=JOBDB8
     @Override
     public void after(Object target, Object[] args, Object result, Throwable throwable) {
         if (isDebug) {
             logger.afterInterceptor(target, args, result, throwable);
         }
-        if (args == null || args.length != 5) {
+        if (args == null || args.length != 3) {
             return;
         }
-
-        final String hostToConnectTo = getString(args[0]);
-        final Integer portToConnectTo = getInteger(args[1]);
-        final String databaseId = getString(args[3]);
+        
+        Properties properties = (Properties)args[1];
+        String dburl = properties.getProperty("dburl") + "?" + "currentschema=" + properties.getProperty("currentschema");
+        final HanaJdbcUrlParser jdbcUrlParser = new HanaJdbcUrlParser();
         // In case of loadbalance, connectUrl is modified.
         // final String url = getString(args[4]);
-        DatabaseInfo databaseInfo = null;
-        if (hostToConnectTo != null && portToConnectTo != null && databaseId != null) {
-            // It's dangerous to use this url directly
-            databaseInfo = createDatabaseInfo(hostToConnectTo, portToConnectTo, databaseId);
-            if (InterceptorUtils.isSuccess(throwable)) {
-                // Set only if connection is success.
-                if (target instanceof DatabaseInfoAccessor) {
-                    ((DatabaseInfoAccessor) target)._$PINPOINT$_setDatabaseInfo(databaseInfo);
-                }
+        DatabaseInfo databaseInfo = jdbcUrlParser.parse(dburl);
+
+        if (InterceptorUtils.isSuccess(throwable)) {
+            // Set only if connection is success.
+            if (target instanceof DatabaseInfoAccessor) {
+                ((DatabaseInfoAccessor) target)._$PINPOINT$_setDatabaseInfo(databaseInfo);
             }
         }
 

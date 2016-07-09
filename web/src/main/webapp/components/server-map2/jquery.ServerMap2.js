@@ -89,6 +89,8 @@
                     'NBASE_T_GROUP': 'NBASE_T.png',
                     'USER': 'USER.png',
                     'USER_GROUP': 'USER.png'
+					'HANA': 'HANA.png',
+                    'HANA_GROUP': 'HANA.png'
                 },
                 "htNodeTheme": {
                     "default": {

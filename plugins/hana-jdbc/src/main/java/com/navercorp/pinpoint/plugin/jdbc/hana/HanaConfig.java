@@ -27,7 +27,7 @@ public class HanaConfig extends JdbcConfig {
 
     public HanaConfig(ProfilerConfig config) {
         super(config.readBoolean("profiler.jdbc.hana.tracesqlbindvalue", config.isTraceSqlBindValue()), config.getMaxSqlBindValueSize());
-        this.profileSetAutoCommit = config.readBoolean("profiler.hana.mysql.setautocommit", false);
+        this.profileSetAutoCommit = config.readBoolean("profiler.jdbc.hana.setautocommit", false);
         this.profileCommit = config.readBoolean("profiler.jdbc.hana.commit", false);
         this.profileRollback = config.readBoolean("profiler.jdbc.hana.rollback", false);
     }

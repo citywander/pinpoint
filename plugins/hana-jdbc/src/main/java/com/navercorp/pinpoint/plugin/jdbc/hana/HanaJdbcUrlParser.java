@@ -62,7 +62,6 @@ public class HanaJdbcUrlParser extends JdbcUrlParser {
     }
 
     private DatabaseInfo parseNormal(String url) {
-     // jdbc:mysql://1.2.3.4:5678/test_db
         StringMaker maker = new StringMaker(url);
         maker.after("jdbc:hana:");
         // 1.2.3.4:5678 In case of replication driver could have multiple values

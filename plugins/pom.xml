@@ -19,7 +19,7 @@
         <module>jackson</module>
         <module>cubrid-jdbc</module>
         <module>mysql-jdbc</module>
-		<module>hana-jdbc</module>
+        <module>hana-jdbc</module>
         <module>mariadb-jdbc</module>
         <module>postgresql-jdbc</module>
         <module>jtds</module>
@@ -74,9 +74,14 @@
         </dependency>
         <dependency>
             <groupId>com.navercorp.pinpoint</groupId>
-            <artifactId>pinpoint-mysql-jdbc-driver-plugin</artifactId>
+            <artifactId>pinpoint-hana-jdbc-driver-plugin</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.navercorp.pinpoint</groupId>
+            <artifactId>pinpoint-mysql-jdbc-driver-plugin</artifactId>
+            <version>${project.version}</version>
+        </dependency>		
         <dependency>
             <groupId>com.navercorp.pinpoint</groupId>
             <artifactId>pinpoint-mariadb-jdbc-driver-plugin</artifactId>

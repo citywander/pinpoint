@@ -90,7 +90,9 @@
                     'USER': 'USER.png',
                     'USER_GROUP': 'USER.png',
 					'HANA': 'HANA.png',
-                    'HANA_GROUP': 'HANA.png'
+                    'HANA_GROUP': 'HANA.png',
+                    'RABBITMQ': 'RABBITMQ.png',
+                    'RABBITMQ_GROUP': 'RABBITMQ.png'
                 },
                 "htNodeTheme": {
                     "default": {

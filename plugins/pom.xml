@@ -20,6 +20,7 @@
         <module>cubrid-jdbc</module>
         <module>mysql-jdbc</module>
         <module>hana-jdbc</module>
+        <module>rabbitmq</module>		
         <module>mariadb-jdbc</module>
         <module>postgresql-jdbc</module>
         <module>jtds</module>

@@ -33,15 +33,15 @@ import com.navercorp.pinpoint.plugin.jdbc.hana.HanaJdbcUrlParser;
 /**
  * @author emeroad
  */
-@TargetConstructor({ "com.sap.db.rte.comm.JdbcCommunication", "java.util.Properties", "com.sap.db.jdbc.trace.TraceControl" })
-public class HanaConnectionCreateInterceptor implements AroundInterceptor {
+@TargetConstructor({ "java.sql.Connection", "com.sap.db.jdbc.trace.TraceControl" })
+public class HanaTraceConnectionCreateInterceptor implements AroundInterceptor {
 
     private final PLogger logger = PLoggerFactory.getLogger(this.getClass());
     private final boolean isDebug = logger.isDebugEnabled();
 
     private final TraceContext traceContext;
 
-    public HanaConnectionCreateInterceptor(TraceContext traceContext) {
+    public HanaTraceConnectionCreateInterceptor(TraceContext traceContext) {
         this.traceContext = traceContext;
     }
 
@@ -51,16 +51,10 @@ public class HanaConnectionCreateInterceptor implements AroundInterceptor {
         if (isDebug) {
             logger.afterInterceptor(target, args, result, throwable);
         }
-        if (args == null || args.length != 3) {
+        if (args == null || args.length != 2) {
             return;
         }
-        
-        Properties properties = (Properties)args[1];
-        String dburl = properties.getProperty("dburl") + "?" + "currentschema=" + properties.getProperty("currentschema");
-        final HanaJdbcUrlParser jdbcUrlParser = new HanaJdbcUrlParser();
-        // In case of loadbalance, connectUrl is modified.
-        // final String url = getString(args[4]);
-        DatabaseInfo databaseInfo = jdbcUrlParser.parse(dburl);
+        DatabaseInfo databaseInfo = (target instanceof DatabaseInfoAccessor) ? ((DatabaseInfoAccessor)args[0])._$PINPOINT$_getDatabaseInfo() : null;
 
         if (InterceptorUtils.isSuccess(throwable)) {
             // Set only if connection is success.

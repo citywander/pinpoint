@@ -40,7 +40,8 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
     public void setup(ProfilerPluginSetupContext context) {
         HanaConfig config = new HanaConfig(context.getConfig());
 
-        addConnectionTransformer(config);
+        addConnectionTransformer("com.sap.db.jdbc.ConnectionSapDB", config, false);
+        addConnectionTransformer("com.sap.db.jdbc.trace.Connection", config, true);
         addDriverTransformer();
         addStatementTransformer();
         addPreparedStatementTransformer(config);
@@ -52,7 +53,7 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
         //addJDBC4CallableStatementTransformer(config);
     }
 
-    private void addConnectionTransformer(final HanaConfig config) {
+    private void addConnectionTransformer(String className, final HanaConfig config, final boolean trace) {
         TransformCallback transformer = new TransformCallback() {
 
             @Override
@@ -64,8 +65,11 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
                 }
 
                 target.addField("com.navercorp.pinpoint.bootstrap.plugin.jdbc.DatabaseInfoAccessor");
-
-                target.addInterceptor("com.navercorp.pinpoint.plugin.jdbc.hana.interceptor.HanaConnectionCreateInterceptor");
+                if(trace){
+                    target.addInterceptor("com.navercorp.pinpoint.plugin.jdbc.hana.interceptor.HanaTraceConnectionCreateInterceptor");
+                }else{
+                    target.addInterceptor("com.navercorp.pinpoint.plugin.jdbc.hana.interceptor.HanaConnectionCreateInterceptor");
+                }
                 target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.ConnectionCloseInterceptor", HanaConstants.HANA_SCOPE);
                 target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.StatementCreateInterceptor", HanaConstants.HANA_SCOPE);
                 target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.PreparedStatementCreateInterceptor", HanaConstants.HANA_SCOPE);
@@ -87,7 +91,8 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
         };
 
         //transformTemplate.transform("com.sap.db.jdbc.trace.Connection", transformer);
-        transformTemplate.transform("com.sap.db.jdbc.ConnectionSapDB", transformer);
+ 
+        transformTemplate.transform(className, transformer);
         //transformTemplate.transform("com.mysql.jdbc.ConnectionImpl", transformer);
     }
 

@@ -16,8 +16,8 @@ import java.security.ProtectionDomain;
  * @author Jinkai.Ma
  */
 public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
-    private static final String PUBLISHER_INTERCEPTOR_FQCN = "com.handu.apollo.pinpoint.plugin.rabbitmq.interceptor.RabbitMQPublishInterceptor";
-    private static final String CONSUMER_INTERCEPTOR_FQCN = "com.handu.apollo.pinpoint.plugin.rabbitmq.interceptor.RabbitMQConsumeInterceptor";
+    private static final String PUBLISHER_INTERCEPTOR_FQCN = "com.navercorp.pinpoint.plugin.rabbitmq.interceptor.RabbitMQPublishInterceptor";
+    private static final String CONSUMER_INTERCEPTOR_FQCN = "com.navercorp.pinpoint.plugin.rabbitmq.interceptor.RabbitMQConsumeInterceptor";
 
     private TransformTemplate transformTemplate;
 
@@ -67,6 +67,8 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
         });
     }
 
+    
+    /**
     private void addConsumer() {
         transformTemplate.transform("org.springframework.amqp.rabbit.listener.BlockingQueueConsumer$InternalConsumer", new TransformCallback() {
             @Override
@@ -108,7 +110,7 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
             }
         });
     }
-
+**/
     @Override
     public void setTransformTemplate(TransformTemplate transformTemplate) {
         this.transformTemplate = transformTemplate;

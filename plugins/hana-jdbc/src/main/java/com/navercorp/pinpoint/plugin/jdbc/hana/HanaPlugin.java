@@ -111,7 +111,7 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
     }
 
     private void addPreparedStatementTransformer(final HanaConfig config) {
-        transformTemplate.transform("com.sap.db.jdbc.CallableStatementSapDB", new TransformCallback() {
+        TransformCallback transformer =  new TransformCallback() {
 
             @Override
             public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
@@ -132,7 +132,35 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
 
                 return target.toBytecode();
             }
-        });
+        };
+        transformTemplate.transform("com.sap.db.jdbc.CallableStatementSapDB", transformer);
+        transformTemplate.transform("com.sap.db.jdbc.CallableStatementSapDBFinalize", transformer);
+        transformTemplate.transform("com.sap.db.jdbc.trace.PreparedStatement", transformer);
+    }
+    
+    private void addStatementTransformer() {
+        TransformCallback transformer = new TransformCallback() {
+
+            @Override
+            public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
+                InstrumentClass target = instrumentor.getInstrumentClass(loader, className, classfileBuffer);
+
+                if (!target.isInterceptable()) {
+                    return null;
+                }
+
+                target.addField("com.navercorp.pinpoint.bootstrap.plugin.jdbc.DatabaseInfoAccessor");
+
+                target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.StatementExecuteQueryInterceptor", HanaConstants.HANA_SCOPE);
+                target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.StatementExecuteUpdateInterceptor", HanaConstants.HANA_SCOPE);
+
+                return target.toBytecode();
+            }
+        };
+
+        transformTemplate.transform("com.sap.db.jdbc.trace.Statement", transformer);
+        transformTemplate.transform("com.sap.db.jdbc.StatementSapDB", transformer);
+
     }
 
     private void addCallableStatementTransformer(final HanaConfig config) {
@@ -195,30 +223,6 @@ public class HanaPlugin implements ProfilerPlugin, TransformTemplateAware {
         });
     }*/
 
-    private void addStatementTransformer() {
-        TransformCallback transformer = new TransformCallback() {
-
-            @Override
-            public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
-                InstrumentClass target = instrumentor.getInstrumentClass(loader, className, classfileBuffer);
-
-                if (!target.isInterceptable()) {
-                    return null;
-                }
-
-                target.addField("com.navercorp.pinpoint.bootstrap.plugin.jdbc.DatabaseInfoAccessor");
-
-                target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.StatementExecuteQueryInterceptor", HanaConstants.HANA_SCOPE);
-                target.addScopedInterceptor("com.navercorp.pinpoint.bootstrap.plugin.jdbc.interceptor.StatementExecuteUpdateInterceptor", HanaConstants.HANA_SCOPE);
-
-                return target.toBytecode();
-            }
-        };
-
-        transformTemplate.transform("com.sap.db.jdbc.trace.Statement", transformer);
-        transformTemplate.transform("com.sap.db.jdbc.StatementSapDB", transformer);
-
-    }
 
     @Override
     public void setTransformTemplate(TransformTemplate transformTemplate) {

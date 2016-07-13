@@ -16,7 +16,6 @@
 
 package com.navercorp.pinpoint.plugin.jdbc.hana.interceptor;
 
-import java.util.Properties;
 
 import com.navercorp.pinpoint.bootstrap.context.DatabaseInfo;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
@@ -28,7 +27,6 @@ import com.navercorp.pinpoint.bootstrap.logging.PLogger;
 import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
 import com.navercorp.pinpoint.bootstrap.plugin.jdbc.DatabaseInfoAccessor;
 import com.navercorp.pinpoint.bootstrap.util.InterceptorUtils;
-import com.navercorp.pinpoint.plugin.jdbc.hana.HanaJdbcUrlParser;
 
 /**
  * @author emeroad

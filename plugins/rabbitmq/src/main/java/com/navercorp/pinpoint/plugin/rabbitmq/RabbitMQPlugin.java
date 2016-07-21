@@ -99,6 +99,11 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
             }
         });
     }
+
+    @Override
+    public void setTransformTemplate(TransformTemplate transformTemplate) {
+        this.transformTemplate = transformTemplate;
+    }
     
     private void addSpringMessage() {
         transformTemplate.transform("org.springframework.amqp.core.Message", new TransformCallback() {
@@ -109,10 +114,5 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
                 return target.toBytecode();
             }
         });
-    }
-
-    @Override
-    public void setTransformTemplate(TransformTemplate transformTemplate) {
-        this.transformTemplate = transformTemplate;
     }
 }

@@ -18,7 +18,6 @@ package com.navercorp.pinpoint.plugin.rabbitmq.interceptor;
 
 import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
-import com.navercorp.pinpoint.bootstrap.context.SpanId;
 import com.navercorp.pinpoint.bootstrap.context.Trace;
 import com.navercorp.pinpoint.bootstrap.context.TraceContext;
 import com.navercorp.pinpoint.bootstrap.context.TraceId;
@@ -30,7 +29,6 @@ import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScope;
 import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScopeInvocation;
 import com.navercorp.pinpoint.bootstrap.logging.PLogger;
 import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
-import com.navercorp.pinpoint.bootstrap.util.NumberUtils;
 import com.navercorp.pinpoint.bootstrap.util.StringUtils;
 import com.navercorp.pinpoint.common.trace.AnnotationKey;
 import com.navercorp.pinpoint.plugin.rabbitmq.RabbitMQConstants;
@@ -74,21 +72,20 @@ public class AMQChannelTransmitInterceptor implements AroundInterceptor {
         }
 
         Trace trace = traceContext.currentRawTraceObject();
-        
-        final String destination = "hello";
-        // might have been invoked through Channel#basicGet method, in which case, skip
-        if (StringUtils.isEmpty(destination)) {
-            return;
-        }
-        AMQCommand command = (AMQCommand) args[0];
-        AMQP.BasicProperties properties = (AMQP.BasicProperties) command.getContentHeader();
-        
         if (trace == null) {
-            //return;
-            createTrace(properties);
+            return;
         }
 
         try {
+
+            InterceptorScopeInvocation currentInvocation = this.interceptorScope.getCurrentInvocation();
+            final String destination = (String) currentInvocation.getAttachment();
+            // might have been invoked through Channel#basicGet method, in which case, skip
+            if (StringUtils.isEmpty(destination)) {
+                return;
+            }
+            AMQCommand command = (AMQCommand) args[0];
+            AMQP.BasicProperties properties = (AMQP.BasicProperties) command.getContentHeader();
             Map<String, Object> headers = new HashMap<String, Object>();
             // copy original headers
             if (properties != null && properties.getHeaders() != null) {
@@ -96,6 +93,7 @@ public class AMQChannelTransmitInterceptor implements AroundInterceptor {
                     headers.put(key, properties.getHeaders().get(key));
                 }
             }
+
             if (trace.canSampled()) {
                 SpanEventRecorder recorder = trace.traceBlockBegin();
                 recorder.recordServiceType(RabbitMQConstants.RABBITMQ_SERVICE_TYPE);
@@ -179,27 +177,5 @@ public class AMQChannelTransmitInterceptor implements AroundInterceptor {
             return false;
         }
         return true;
-    }
-    
-    private Trace createTrace(AMQP.BasicProperties properties) {
-        Map<String, Object> headers = properties.getHeaders();
-        // If this transaction is not traceable, mark as disabled.
-        if (headers.get(RabbitMQConstants.META_DO_NOT_TRACE) != null) {
-            return traceContext.disableSampling();
-        }
-
-        Object transactionId = headers.get(RabbitMQConstants.META_TRANSACTION_ID);
-        // If there's no trasanction id, a new trasaction begins here.
-        if (transactionId == null) {
-            return traceContext.newTraceObject();
-        }
-
-        // otherwise, continue tracing with given data.
-        long parentSpanID = NumberUtils.parseLong(headers.get(RabbitMQConstants.META_PARENT_SPAN_ID).toString(), SpanId.NULL);
-        long spanID = NumberUtils.parseLong(headers.get(RabbitMQConstants.META_SPAN_ID).toString(), SpanId.NULL);
-        short flags = NumberUtils.parseShort(headers.get(RabbitMQConstants.META_FLAGS).toString(), (short) 0);
-        TraceId traceId = traceContext.createTraceId(transactionId.toString(), parentSpanID, spanID, flags);
-
-        return traceContext.continueTraceObject(traceId);
     }
 }

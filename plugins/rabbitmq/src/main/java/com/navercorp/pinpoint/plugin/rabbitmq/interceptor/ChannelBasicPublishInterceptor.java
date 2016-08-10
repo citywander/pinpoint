@@ -19,12 +19,20 @@ package com.navercorp.pinpoint.plugin.rabbitmq.interceptor;
 import com.navercorp.pinpoint.bootstrap.interceptor.SpanEventSimpleAroundInterceptorForPlugin;
 import com.navercorp.pinpoint.bootstrap.interceptor.annotation.Name;
 import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScope;
+import com.navercorp.pinpoint.bootstrap.util.NumberUtils;
 import com.navercorp.pinpoint.plugin.rabbitmq.RabbitMQConstants;
+
+import java.util.Map;
+
 import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
 import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
+import com.navercorp.pinpoint.bootstrap.context.SpanId;
+import com.navercorp.pinpoint.bootstrap.context.Trace;
 import com.navercorp.pinpoint.bootstrap.context.TraceContext;
+import com.navercorp.pinpoint.bootstrap.context.TraceId;
 import com.navercorp.pinpoint.bootstrap.interceptor.annotation.Scope;
 import com.navercorp.pinpoint.plugin.rabbitmq.RabbitMQUtils;
+import com.rabbitmq.client.AMQP;
 
 /**
  * @author Jinkai.Ma
@@ -38,9 +46,23 @@ public class ChannelBasicPublishInterceptor extends SpanEventSimpleAroundInterce
         super(traceContext, descriptor);
         this.interceptorScope = interceptorScope;
     }
-
+    
+    @Override
+    protected void prepareBeforeTrace(Object target, Object[] args) {
+        this.setCurrentInvocation(target, args);
+        final Trace trace = traceContext.currentTraceObject();
+        if(trace == null){
+            AMQP.BasicProperties properties = (AMQP.BasicProperties)args[4];
+            this.createTrace(properties);
+        }
+    }
+    
     @Override
     protected void doInBeforeTrace(SpanEventRecorder recorder, Object target, Object[] args) {
+        this.setCurrentInvocation(target, args);
+    }
+    
+    private void setCurrentInvocation(Object target, Object[] args){
         String routingKey = (String) args[1];
         String exchange = (String) args[0];
         final String destination = RabbitMQUtils.createDestination(exchange, routingKey);
@@ -55,4 +77,30 @@ public class ChannelBasicPublishInterceptor extends SpanEventSimpleAroundInterce
             recorder.recordException(throwable);
         }
     }
+    
+    private Trace createTrace(AMQP.BasicProperties properties) {
+        if(properties == null){
+            return null;
+        }
+        Map<String, Object> headers = properties.getHeaders();
+        // If this transaction is not traceable, mark as disabled.
+        if (headers.get(RabbitMQConstants.META_DO_NOT_TRACE) != null) {
+            return traceContext.disableSampling();
+        }
+
+        Object transactionId = headers.get(RabbitMQConstants.META_TRANSACTION_ID);
+        // If there's no trasanction id, a new trasaction begins here.
+        if (transactionId == null) {
+            return traceContext.newTraceObject();
+        }
+
+        // otherwise, continue tracing with given data.
+        long parentSpanID = NumberUtils.parseLong(headers.get(RabbitMQConstants.META_PARENT_SPAN_ID).toString(), SpanId.NULL);
+        long spanID = NumberUtils.parseLong(headers.get(RabbitMQConstants.META_SPAN_ID).toString(), SpanId.NULL);
+        short flags = NumberUtils.parseShort(headers.get(RabbitMQConstants.META_FLAGS).toString(), (short) 0);
+        TraceId traceId = traceContext.createTraceId(transactionId.toString(), parentSpanID, spanID, flags);
+
+        return traceContext.continueTraceObject(traceId);
+    }
+    
 }

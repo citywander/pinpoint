@@ -20,27 +20,17 @@ package com.navercorp.pinpoint.plugin.rabbitmq.interceptor;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.navercorp.pinpoint.bootstrap.context.MethodDescriptor;
-import com.navercorp.pinpoint.bootstrap.context.SpanEventRecorder;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
+
 import com.navercorp.pinpoint.bootstrap.context.Trace;
 import com.navercorp.pinpoint.bootstrap.context.TraceContext;
 import com.navercorp.pinpoint.bootstrap.context.TraceId;
 import com.navercorp.pinpoint.bootstrap.interceptor.AroundInterceptor;
-import com.navercorp.pinpoint.bootstrap.interceptor.annotation.Name;
 import com.navercorp.pinpoint.bootstrap.interceptor.annotation.TargetConstructor;
-import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScope;
-import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScopeInvocation;
 import com.navercorp.pinpoint.bootstrap.logging.PLogger;
 import com.navercorp.pinpoint.bootstrap.logging.PLoggerFactory;
-import com.navercorp.pinpoint.bootstrap.util.StringUtils;
-import com.navercorp.pinpoint.common.trace.AnnotationKey;
 import com.navercorp.pinpoint.plugin.rabbitmq.RabbitMQConstants;
-import com.navercorp.pinpoint.plugin.rabbitmq.RabbitMQUtils;
-import com.navercorp.pinpoint.plugin.rabbitmq.field.setter.HeadersFieldSetter;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.impl.AMQChannel;
-import com.rabbitmq.client.impl.AMQCommand;
-import com.rabbitmq.client.impl.AMQConnection;
 
 /**
  * @author emeroad
@@ -53,13 +43,9 @@ public class MessageCreateInterceptor implements AroundInterceptor {
     private final boolean isDebug = logger.isDebugEnabled();
 
     private final TraceContext traceContext;
-    private final MethodDescriptor descriptor;
-    private final InterceptorScope interceptorScope;
 
-    public MessageCreateInterceptor(TraceContext traceContext, MethodDescriptor descriptor, @Name(RabbitMQConstants.RABBITMQ_SCOPE) InterceptorScope interceptorScope) {
+    public MessageCreateInterceptor(TraceContext traceContext) {
         this.traceContext = traceContext;
-        this.descriptor = descriptor;
-        this.interceptorScope = interceptorScope;
     }
     @Override
     public void before(Object target, Object[] args) {
@@ -73,17 +59,11 @@ public class MessageCreateInterceptor implements AroundInterceptor {
 
         Trace trace = traceContext.currentRawTraceObject();
         
-        final String destination = "hello";
         // might have been invoked through Channel#basicGet method, in which case, skip
-        if (StringUtils.isEmpty(destination)) {
-            return;
-        }
-        AMQCommand command = (AMQCommand) args[0];
-        AMQP.BasicProperties properties = (AMQP.BasicProperties) command.getContentHeader();
+        MessageProperties properties = (MessageProperties) args[1];
         
         if (trace == null) {
             return;
-            //createTrace(properties);
         }
 
         try {
@@ -95,24 +75,16 @@ public class MessageCreateInterceptor implements AroundInterceptor {
                 }
             }
             if (trace.canSampled()) {
-                SpanEventRecorder recorder = trace.traceBlockBegin();
-                recorder.recordServiceType(RabbitMQConstants.RABBITMQ_SERVICE_TYPE);
-
-                TraceId nextId = trace.getTraceId().getNextTraceId();
-
-                recorder.recordNextSpanId(nextId.getSpanId());
-
-                headers.put(RabbitMQConstants.META_TRANSACTION_ID, nextId.getTransactionId());
-                headers.put(RabbitMQConstants.META_SPAN_ID, Long.toString(nextId.getSpanId()));
-                headers.put(RabbitMQConstants.META_PARENT_SPAN_ID, Long.toString(nextId.getParentSpanId()));
-                headers.put(RabbitMQConstants.META_FLAGS, Short.toString(nextId.getFlags()));
-                headers.put(RabbitMQConstants.META_PARENT_APPLICATION_NAME, traceContext.getApplicationName());
-                headers.put(RabbitMQConstants.META_PARENT_APPLICATION_TYPE, traceContext.getServerTypeCode());
-                headers.put(RabbitMQConstants.META_HOST, destination);
+                TraceId currentId = trace.getTraceId();
+                properties.setHeader(RabbitMQConstants.META_TRANSACTION_ID, currentId.getTransactionId());
+                properties.setHeader(RabbitMQConstants.META_SPAN_ID, Long.toString(currentId.getSpanId()));
+                properties.setHeader(RabbitMQConstants.META_PARENT_SPAN_ID, Long.toString(currentId.getParentSpanId()));
+                properties.setHeader(RabbitMQConstants.META_FLAGS, Short.toString(currentId.getFlags()));
+                properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_NAME, traceContext.getApplicationName());
+                properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_TYPE, traceContext.getServerTypeCode());
             } else {
                 headers.put(RabbitMQConstants.META_DO_NOT_TRACE, "1");
             }
-            ((HeadersFieldSetter) properties)._$PINPOINT$_setHeaders(headers);
         } catch (Throwable t) {
             logger.warn("Failed to before process. {}", t.getMessage(), t);
         }
@@ -124,7 +96,7 @@ public class MessageCreateInterceptor implements AroundInterceptor {
         if (isDebug) {
             logger.afterInterceptor(target, args);
         }
-        if (!validate(target, args)) {
+/*        if (!validate(target, args)) {
             return;
         }
 
@@ -154,26 +126,11 @@ public class MessageCreateInterceptor implements AroundInterceptor {
             logger.warn("AFTER error. Cause:{}", t.getMessage(), t);
         } finally {
             trace.traceBlockEnd();
-        }
+        }*/
     }
 
     private boolean validate(Object target, Object[] args) {
-        if (!(target instanceof AMQChannel)) {
-            return false;
-        }
-        if (args == null || args.length < 1) {
-            return false;
-        }
-        if (!(args[0] instanceof AMQCommand)) {
-            return false;
-        }
-        if (!(((AMQChannel) target).getConnection() instanceof AMQConnection)) {
-            return false;
-        }
-        if (!(((AMQCommand) args[0]).getContentHeader() instanceof AMQP.BasicProperties)) {
-            return false;
-        }
-        if (!(((AMQCommand) args[0]).getContentHeader() instanceof HeadersFieldSetter)) {
+        if (!(target instanceof Message)) {
             return false;
         }
         return true;

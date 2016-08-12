@@ -75,11 +75,11 @@ public class MessageCreateInterceptor implements AroundInterceptor {
                 }
             }
             if (trace.canSampled()) {
-                TraceId currentId = trace.getTraceId();
-                properties.setHeader(RabbitMQConstants.META_TRANSACTION_ID, currentId.getTransactionId());
-                properties.setHeader(RabbitMQConstants.META_SPAN_ID, Long.toString(currentId.getSpanId()));
-                properties.setHeader(RabbitMQConstants.META_PARENT_SPAN_ID, Long.toString(currentId.getParentSpanId()));
-                properties.setHeader(RabbitMQConstants.META_FLAGS, Short.toString(currentId.getFlags()));
+                TraceId nextId = trace.getTraceId().getNextTraceId();
+                properties.setHeader(RabbitMQConstants.META_TRANSACTION_ID, nextId.getTransactionId());
+                properties.setHeader(RabbitMQConstants.META_SPAN_ID, Long.toString(nextId.getSpanId()));
+                properties.setHeader(RabbitMQConstants.META_PARENT_SPAN_ID, Long.toString(nextId.getParentSpanId()));
+                properties.setHeader(RabbitMQConstants.META_FLAGS, Short.toString(nextId.getFlags()));
                 properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_NAME, traceContext.getApplicationName());
                 properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_TYPE, traceContext.getServerTypeCode());
             } else {

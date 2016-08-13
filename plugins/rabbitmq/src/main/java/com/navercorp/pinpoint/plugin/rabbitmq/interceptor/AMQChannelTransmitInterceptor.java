@@ -132,7 +132,7 @@ public class AMQChannelTransmitInterceptor implements AroundInterceptor {
         if (trace == null) {
             return;
         }
-
+        
         try {
             SpanEventRecorder recorder = trace.currentSpanEventRecorder();
             recorder.recordApi(descriptor);

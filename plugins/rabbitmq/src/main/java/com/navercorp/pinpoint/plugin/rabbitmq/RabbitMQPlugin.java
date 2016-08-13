@@ -23,8 +23,6 @@ import com.navercorp.pinpoint.bootstrap.instrument.Instrumentor;
 import com.navercorp.pinpoint.bootstrap.instrument.transformer.TransformCallback;
 import com.navercorp.pinpoint.bootstrap.instrument.transformer.TransformTemplate;
 import com.navercorp.pinpoint.bootstrap.instrument.transformer.TransformTemplateAware;
-import com.navercorp.pinpoint.bootstrap.interceptor.scope.ExecutionPolicy;
-import com.navercorp.pinpoint.bootstrap.interceptor.scope.InterceptorScope;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPlugin;
 import com.navercorp.pinpoint.bootstrap.plugin.ProfilerPluginSetupContext;
 
@@ -45,7 +43,6 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
         this.addPublisherEditors();
         this.addConsumerEditors();
         this.addSpringMessage();
-        this.addFrw();
     }
 
     private void addPublisherEditors() {
@@ -114,39 +111,6 @@ public class RabbitMQPlugin implements ProfilerPlugin, TransformTemplateAware {
             public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
                 InstrumentClass target = instrumentor.getInstrumentClass(loader, className, classfileBuffer);
                 target.addInterceptor("com.navercorp.pinpoint.plugin.rabbitmq.interceptor.MessageCreateInterceptor");
-                return target.toBytecode();
-            }
-        });
-    }
-    
-    private void addFrw() {
-        transformTemplate.transform("com.sap.sme.anw.event.sender.service.impl.ImmediateEventSender", new TransformCallback() {
-            @Override
-            public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
-                InterceptorScope scope = instrumentor.getInterceptorScope(RabbitMQConstants.RABBITMQ_SCOPE);
-                
-                InstrumentClass target = instrumentor.getInstrumentClass(loader, className, classfileBuffer);
-                target.addField("com.navercorp.pinpoint.bootstrap.async.AsyncTraceIdAccessor");
-                
-                InstrumentMethod constructor = target.getConstructor("org.springframework.context.ApplicationContext", "com.sap.sme.anw.event.sender.model.Event");
-                constructor.addScopedInterceptor("com.navercorp.pinpoint.plugin.rabbitmq.interceptor.ImmediateEventSenderConInterceptor", scope, ExecutionPolicy.INTERNAL);
-                
-                InstrumentMethod run = target.getDeclaredMethod("run");
-                run.addInterceptor("com.navercorp.pinpoint.plugin.rabbitmq.interceptor.ImmediateEventSenderRunInterceptor");
-
-                return target.toBytecode();
-            }
-        });
-        
-        transformTemplate.transform("com.sap.sme.anw.event.sender.service.impl.DefaultEventPublisher", new TransformCallback() {
-            @Override
-            public byte[] doInTransform(Instrumentor instrumentor, ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws InstrumentException {
-                InterceptorScope scope = instrumentor.getInterceptorScope(RabbitMQConstants.RABBITMQ_SCOPE);
-
-                InstrumentClass target = instrumentor.getInstrumentClass(loader, className, classfileBuffer);
-                InstrumentMethod targetMethod = target.getDeclaredMethod("publishCachedMessages");
-                targetMethod.addScopedInterceptor("com.navercorp.pinpoint.plugin.rabbitmq.interceptor.DefaultEventPublisherInterceptor", scope);
-
                 return target.toBytecode();
             }
         });

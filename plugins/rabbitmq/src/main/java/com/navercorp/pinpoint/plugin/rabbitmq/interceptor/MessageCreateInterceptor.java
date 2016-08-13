@@ -67,23 +67,18 @@ public class MessageCreateInterceptor implements AroundInterceptor {
         }
 
         try {
-            Map<String, Object> headers = new HashMap<String, Object>();
-            // copy original headers
-            if (properties != null && properties.getHeaders() != null) {
-                for (String key : properties.getHeaders().keySet()) {
-                    headers.put(key, properties.getHeaders().get(key));
-                }
-            }
             if (trace.canSampled()) {
                 TraceId nextId = trace.getTraceId().getNextTraceId();
+                if(properties.getHeaders().containsKey(RabbitMQConstants.META_TRANSACTION_ID)){
+                    return;
+                }
                 properties.setHeader(RabbitMQConstants.META_TRANSACTION_ID, nextId.getTransactionId());
                 properties.setHeader(RabbitMQConstants.META_SPAN_ID, Long.toString(nextId.getSpanId()));
                 properties.setHeader(RabbitMQConstants.META_PARENT_SPAN_ID, Long.toString(nextId.getParentSpanId()));
                 properties.setHeader(RabbitMQConstants.META_FLAGS, Short.toString(nextId.getFlags()));
                 properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_NAME, traceContext.getApplicationName());
                 properties.setHeader(RabbitMQConstants.META_PARENT_APPLICATION_TYPE, traceContext.getServerTypeCode());
-            } else {
-                headers.put(RabbitMQConstants.META_DO_NOT_TRACE, "1");
+                properties.setHeader(RabbitMQConstants.THREAD_NAME, Thread.currentThread().getName());
             }
         } catch (Throwable t) {
             logger.warn("Failed to before process. {}", t.getMessage(), t);

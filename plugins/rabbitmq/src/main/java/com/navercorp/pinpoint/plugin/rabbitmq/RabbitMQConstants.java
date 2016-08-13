@@ -47,6 +47,7 @@ public interface RabbitMQConstants {
     String META_PARENT_APPLICATION_TYPE = "_RABBITMQ_PARENT_APPLICATION_TYPE";
     String META_FLAGS = "_RABBITMQ_FLAGS";
     String META_HOST = "_RABBITMQ_HOST";
+    String THREAD_NAME = "THREAD_NAME";
 
     String FIELD_SETTER_HEADER = "com.navercorp.pinpoint.plugin.rabbitmq.field.setter.HeadersFieldSetter";
 }

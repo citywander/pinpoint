@@ -72,6 +72,15 @@ public class ChannelBasicGetInterceptor extends SpanEventSimpleAroundInterceptor
             recorder.recordException(throwable);
         }
     }
+    
+    @Override
+    public void after(Object target, Object[] args, Object result, Throwable throwable){
+        try{
+            super.after(target, args, result, throwable);
+        }finally{
+            
+        }
+    }
 
     private boolean validate(Object target, Object[] args, Object result) {
         if (!(target instanceof Channel)) {
